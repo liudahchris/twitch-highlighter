@@ -16,7 +16,7 @@ def is_start(line):
     is_start_end : bool
         if line is start of end of session
     '''
-    pass
+    return line[:15] == "# Log started: "
 
 
 def is_end(line):
@@ -32,7 +32,7 @@ def is_end(line):
     is_start_end : bool
         if line is start of end of session
     '''
-    pass
+    return line[:14] == "# Log closed: "
 
 
 def is_message(line):
@@ -146,24 +146,47 @@ def get_top_words(word_counts, n_words):
     return top_words
 
 
+def round_time(dt):
+    pass
+
+
 def process_file(fname, n_words=10):
     '''
+    Takes a text file and processes it. Bins messages into
+
+    Parameters:
+    fname : string
+        location of chatty text file
+
+    n_words : int (default 10)
+        number of top words to keep
     '''
     # Dictionary timestamp as key and word count dictionary as value
     data = defaultdict(dict)
+    previous_time = None
     with open(fname) as f:
         for i, line in enumerate(f):
+            if is_start(line):
+                start_dt = line[15:]
+
+            if is_end(line):
+                end_dt = line[14:]
+                break
+
             if is_message(line):
                 time, word_counts = parse_message(line)
-                data[time]['words'] = merge_counters([data.get(time, Counter()), word_counts])
+                data[time]['words'] = merge_counters([data.get(time, dict()).get('words', Counter()), word_counts])
                 data[time]['counts'] = data[time].get('counts', 0) + 1
 
                 # Some stuff to reduce space
-                if i == 0:
+                if not previous_time:
                     previous_time = time
                 if time != previous_time:
                     data[previous_time]['words'] = get_top_words(data[previous_time]['words'], n_words)
                     previous_time = time
+
+                if time < previous_time:
+                    continue
 
                 # Write empty points if no messages in certain time
     # Outside of loop, get the top words of the last time
