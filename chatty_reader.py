@@ -131,6 +131,21 @@ def merge_counters(counters):
     return merged
 
 
+def get_top_words(word_counts, n_words):
+    '''
+    Gets the top n words from a word_count dictionary
+
+    Parameters:
+    word_counts : Counter (dict)
+    n_words : int
+
+    Returns :
+    top_words : list of length n_words
+    '''
+    top_words = [word for word, _ in word_counts.most_common(n_words)]
+    return top_words
+
+
 def process_file(fname, n_words=10):
     '''
     '''
@@ -147,9 +162,10 @@ def process_file(fname, n_words=10):
                 if i == 0:
                     previous_time = time
                 if time != previous_time:
-                    data[previous_time]['words'] = [word for word, _ in
-                                                    data[previous_time]['words'].most_common(n_words)]
+                    data[previous_time]['words'] = get_top_words(data[previous_time]['words'], n_words)
                     previous_time = time
 
                 # Write empty points if no messages in certain time
+    # Outside of loop, get the top words of the last time
+    data[time]['words'] = get_top_words(data[time]['words'], n_words)
     return data
