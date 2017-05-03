@@ -1,4 +1,6 @@
 from collections import Counter, defaultdict
+import string
+from nltk.corpus import stopwords
 
 
 def is_start(line):
@@ -53,6 +55,36 @@ def is_message(line):
     return False
 
 
+def clean_token(token):
+    '''
+    Takes a token, strips punctuation and makes lowercase
+
+    Parameters:
+    token : string
+
+    Returns:
+    clean_ token : string
+    '''
+    return token.lower().translate(None, string.punctuation)
+
+
+def clean_tokens(tokens):
+    '''
+    Takes a list of tokens and strips punctuation and makes all lowercase
+
+    Parameters:
+    tokens : list
+        list of words
+
+    Returns:
+    clean_tokens : list
+        list of lowercase words without punctuation
+    '''
+    tokens = clean_token(' '.join(tokens)).split()
+    return [token for token in tokens
+            if token not in stopwords.words('english')]
+
+
 def parse_message(line):
     '''
     Gets the information of a single line from Chatty chat log
@@ -62,9 +94,18 @@ def parse_message(line):
         line of text from chat log
 
     Returns:
-    time : Time of message
+    time : datetime
+        Time of message
+    word_counts: dictionary
+        word counts of message
     '''
-    pass
+    tokens = line.split()
+    time = tokens.pop(0)
+
+    # After popping off time, the username is at the head of the list
+    # Need to skip over username
+    word_counts = Counter(clean_tokens(tokens[1:]))
+    return time, word_counts
 
 
 def merge_counters(counters):
