@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 import string
 from nltk.corpus import stopwords
-
+import datetime
 
 def is_start(line):
     '''
@@ -99,8 +99,9 @@ def parse_message(line):
     word_counts: dictionary
         word counts of message
     '''
+    TIME_FORMAT = "[%H:%M:%S]"
     tokens = line.split()
-    time = tokens.pop(0)
+    time = datetime.datetime.strptime(tokens.pop(0), TIME_FORMAT)
 
     # After popping off time, the username is at the head of the list
     # Need to skip over username
@@ -162,31 +163,40 @@ def process_file(fname, n_words=10):
         number of top words to keep
     '''
     # Dictionary timestamp as key and word count dictionary as value
+    DATE_FORMAT = "%y-%m-%d"
     data = defaultdict(dict)
     previous_time = None
     with open(fname) as f:
         for i, line in enumerate(f):
             if is_start(line):
                 start_dt = line[15:]
+                start_date, start_time, _ = start_dt.split()
+                date = datetime.datetime.strptime(start_date, DATE_FORMAT)
 
-            if is_end(line):
-                end_dt = line[14:]
-                break
+            # if is_end(line):
+            #     end_dt = line[14:]
+            #     end_date, end_time, _ = end_dt.split()
+            #     break
 
             if is_message(line):
                 time, word_counts = parse_message(line)
+
+                if not previous_time:
+                    previous_time = time
+
+                # Midnight edge case
+                if time < previous_time:
+                    date += datetime.timedelta(days=1)
+
                 data[time]['words'] = merge_counters([data.get(time, dict()).get('words', Counter()), word_counts])
                 data[time]['counts'] = data[time].get('counts', 0) + 1
 
                 # Some stuff to reduce space
-                if not previous_time:
-                    previous_time = time
                 if time != previous_time:
                     data[previous_time]['words'] = get_top_words(data[previous_time]['words'], n_words)
                     previous_time = time
 
-                if time < previous_time:
-                    continue
+
 
                 # Write empty points if no messages in certain time
     # Outside of loop, get the top words of the last time
