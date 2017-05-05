@@ -103,11 +103,10 @@ def parse_message(line):
     TIME_FORMAT = "[%H:%M:%S]"
     tokens = line.split()
     time = datetime.datetime.strptime(tokens.pop(0), TIME_FORMAT).time()
-
+    username = tokens.pop(0)
     # After popping off time, the username is at the head of the list
-    # Need to skip over username
-    word_counts = Counter(clean_tokens(tokens[1:]))
-    return time, word_counts
+    word_counts = Counter(clean_tokens(tokens))
+    return time, username, word_counts
 
 
 def merge_counters(counters):
@@ -161,6 +160,15 @@ def round_minute(dt):
     return dt - datetime.timedelta(seconds=dt.second)
 
 
+def fill_blanks(time, previous_time, data):
+    '''
+    '''
+    while time - previous_time > datetime.timedelta(minutes=1):
+        previous_time += datetime.timedelta(minutes=1)
+        data[previous_time] = {'counts': 0, 'words': []}
+    return data
+
+
 def process_file(fname, n_words=10):
     '''
     Takes a text file and processes it. Bins messages into
@@ -183,13 +191,13 @@ def process_file(fname, n_words=10):
                 start_date, start_time, _ = start_dt.split()
                 date = datetime.datetime.strptime(start_date, DATE_FORMAT)
 
-            # if is_end(line):
-            #     end_dt = line[14:]
-            #     end_date, end_time, _ = end_dt.split()
-            #     break
+            if is_end(line):
+                end_dt = line[14:]
+                end_date, end_time, _ = end_dt.split()
+                break
 
             elif is_message(line):
-                time, word_counts = parse_message(line)
+                time, username, word_counts = parse_message(line)
                 time = round_minute(datetime.datetime.combine(date, time))
 
                 if not previous_time:
@@ -205,9 +213,10 @@ def process_file(fname, n_words=10):
                 # Some stuff to reduce space
                 if time != previous_time:
                     data[previous_time]['words'] = get_top_words(data[previous_time].get('words', Counter()), n_words)
+                    # Write empty points if no messages in certain time
+                    data = fill_blanks(time, previous_time, data)
                     previous_time = time
 
-                # Write empty points if no messages in certain time
     # Outside of loop, get the top words of the last time
     data[time]['words'] = get_top_words(data[time]['words'], n_words)
     return data
