@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, url_for, redirect, flash, sen
 from flask_bootstrap import Bootstrap
 import os
 from werkzeug.utils import secure_filename
+from make_plots import make_plot
 
 
 def create_app():
@@ -71,8 +72,9 @@ def upload():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
+    make_plot(filename)
     return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
+                               'temp.html')
 
 
 if __name__ == "__main__":
