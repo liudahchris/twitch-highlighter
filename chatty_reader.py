@@ -3,6 +3,7 @@ import string
 from nltk.corpus import stopwords
 import datetime
 
+
 def is_start(line):
     '''
     Checks if line signals start or end of session
@@ -101,7 +102,7 @@ def parse_message(line):
     '''
     TIME_FORMAT = "[%H:%M:%S]"
     tokens = line.split()
-    time = datetime.datetime.strptime(tokens.pop(0), TIME_FORMAT)
+    time = datetime.datetime.strptime(tokens.pop(0), TIME_FORMAT).time()
 
     # After popping off time, the username is at the head of the list
     # Need to skip over username
@@ -147,8 +148,17 @@ def get_top_words(word_counts, n_words):
     return top_words
 
 
-def round_time(dt):
-    pass
+def round_minute(dt):
+    '''
+    Rounds the a datetime object down to last minute
+
+    Parameters:
+    dt : datetime object
+
+    Returns:
+    rounded_dt : datetime object
+    '''
+    return dt - datetime.timedelta(seconds=dt.second)
 
 
 def process_file(fname, n_words=10):
@@ -163,7 +173,7 @@ def process_file(fname, n_words=10):
         number of top words to keep
     '''
     # Dictionary timestamp as key and word count dictionary as value
-    DATE_FORMAT = "%y-%m-%d"
+    DATE_FORMAT = "%Y-%m-%d"
     data = defaultdict(dict)
     previous_time = None
     with open(fname) as f:
@@ -178,8 +188,9 @@ def process_file(fname, n_words=10):
             #     end_date, end_time, _ = end_dt.split()
             #     break
 
-            if is_message(line):
+            elif is_message(line):
                 time, word_counts = parse_message(line)
+                time = round_minute(datetime.datetime.combine(date, time))
 
                 if not previous_time:
                     previous_time = time
@@ -193,10 +204,8 @@ def process_file(fname, n_words=10):
 
                 # Some stuff to reduce space
                 if time != previous_time:
-                    data[previous_time]['words'] = get_top_words(data[previous_time]['words'], n_words)
+                    data[previous_time]['words'] = get_top_words(data[previous_time].get('words', Counter()), n_words)
                     previous_time = time
-
-
 
                 # Write empty points if no messages in certain time
     # Outside of loop, get the top words of the last time
