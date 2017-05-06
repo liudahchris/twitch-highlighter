@@ -20,7 +20,7 @@ def create_app():
 
 app = create_app()
 UPLOAD_FOLDER = 'temp/'
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS = set(['txt'])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
@@ -29,11 +29,6 @@ app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
 @app.route("/")
 def welcome():
     return render_template("index.html")
-
-
-@app.route("/upload_page")
-def upload_page():
-    return render_template("upload_page.html")
 
 
 def allowed_file(filename):
@@ -72,6 +67,7 @@ def upload():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
+    filename = "temp/{}".format(filename)
     make_plot(filename)
     return send_from_directory(app.config['UPLOAD_FOLDER'],
                                'temp.html')
